@@ -1,0 +1,45 @@
+# Standard Apache config for Next.js Static Export
+# Optimized to handle conflicts between directories and .html files
+Options -Indexes
+DirectorySlash Off
+
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Remove trailing slash if it's not a real directory we want to browse
+  RewriteCond %{REQUEST_URI} ^(.+)/$
+  RewriteCond %{REQUEST_FILENAME} !-d [OR]
+  RewriteCond %{REQUEST_FILENAME}/index.html !-f
+  RewriteRule ^ %1 [R=301,L]
+
+  # 2. If the request is for /something and /something.html exists, serve it
+  # We check this before anything else to favor our route files over directories
+  RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+
+  # 3. If index.html exists in a directory, serve it
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.*)$ $1/index.html [L]
+
+  # 4. If it's a real file, just serve it
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # 5. 404 Fallback
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ /404.html [L]
+
+</IfModule>
+
+# Caching and optimization
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 1 month"
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
